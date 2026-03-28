@@ -34,6 +34,10 @@ def _run_tool(cmd: list[str], data: dict, label: str, timeout: int = 600) -> str
     logger = ActivityLogger(data)
     output_dir = get_project_output_dir(data["name"])
 
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed(cmd[0]):
+        return ""
+
     cmd_str = " ".join(cmd)
     console.print(f"\n[bold cyan]⚡ Running:[/] [dim]{cmd_str}[/]\n")
 

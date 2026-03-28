@@ -46,6 +46,10 @@ def _run_nmap(args: list[str], data: dict, scan_label: str, sudo: bool = False) 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_prefix = output_dir / f"nmap_{scan_label}_{timestamp}"
 
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("nmap"):
+        return ""
+
     # Full command
     cmd = []
     if sudo:

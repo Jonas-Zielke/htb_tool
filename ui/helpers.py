@@ -27,6 +27,8 @@ BANNER = r"""[bold green]
 [dim]         Hack The Box — Toolbox v2.0[/]"""
 
 
+import shutil
+
 def clear():
     os.system("clear" if os.name == "posix" else "cls")
 
@@ -34,6 +36,27 @@ def clear():
 def pause(msg="[dim]\n  Press Enter to continue...[/]"):
     console.print(msg)
     input()
+
+
+def check_tool_installed(tool_name):
+    """Check if tool is in PATH, prompt to install via apt if not."""
+    if shutil.which(tool_name):
+        return True
+        
+    show_error(f"Required tool '{tool_name}' is not installed.")
+    if confirm(f"Would you like to try installing '{tool_name}' via apt?"):
+        import subprocess
+        console.print(f"\n  [dim]Running: sudo apt install -y {tool_name}[/]")
+        proc = subprocess.run(["sudo", "apt", "install", "-y", tool_name])
+        if proc.returncode == 0:
+            show_success(f"Successfully installed [cyan]{tool_name}[/]!")
+            # Brief pause to let user see success message before continuing
+            import time
+            time.sleep(1)
+            return True
+        else:
+            show_error(f"Failed to install '{tool_name}'.")
+    return False
 
 
 def ask(prompt_text, default=None):

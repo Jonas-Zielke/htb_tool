@@ -182,6 +182,10 @@ def action_msfvenom():
     if encoder:
         iterations = ask_int("Encoding iterations", 3)
 
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("msfvenom"):
+        return
+
     cmd = ["msfvenom", "-p", payload_str, f"LHOST={lhost}", f"LPORT={lport}",
            "-f", fmt]
     if encoder:
@@ -262,6 +266,10 @@ def action_listener():
     logger.log_payload("listener", details=f"Started nc listener on port {lport}")
     save_project(data)
 
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("nc"):
+        return
+
     # Use rlwrap if available
     cmd = ["nc", "-lvnp", str(lport)]
     if subprocess.run(["which", "rlwrap"], capture_output=True).returncode == 0:
@@ -326,6 +334,10 @@ def action_msf_handler():
     logger = ActivityLogger(data)
     logger.log_payload("msflistener", details=f"Started {payload} handler on {lport}")
     save_project(data)
+
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("msfconsole"):
+        return
 
     try:
         subprocess.run(["msfconsole", "-q", "-r", str(rc_file)])

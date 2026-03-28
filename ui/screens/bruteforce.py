@@ -23,6 +23,10 @@ def _run_hydra(cmd, data, label):
     output_dir = get_project_output_dir(data["name"])
     outfile = output_dir / f"hydra_{label}.txt"
 
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed(cmd[0]):
+        return
+
     cmd_str = " ".join(cmd)
     console.print(f"\n  [bold cyan]⚡ Running:[/] [dim]{cmd_str}[/]\n")
 
@@ -245,6 +249,10 @@ def action_john():
 
     wordlist = ask("Wordlist", str(ROCKYOU) if ROCKYOU.exists() else "")
 
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("john"):
+        return
+
     cmd = ["john"]
     if fmt:
         cmd.extend([f"--format={fmt}"])
@@ -286,6 +294,10 @@ def action_hashcat():
     console.print("  [dim]             1000=NTLM, 3200=bcrypt, 500=md5crypt[/]")
     mode = ask("Hash mode", "0")
     wordlist = ask("Wordlist", str(ROCKYOU) if ROCKYOU.exists() else "")
+
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("hashcat"):
+        return
 
     cmd = ["hashcat", "-m", mode, hash_file, wordlist, "--force"]
     console.print(f"\n  [bold cyan]⚡ Running:[/] [dim]{' '.join(cmd)}[/]\n")
