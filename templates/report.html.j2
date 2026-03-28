@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTB Report — {{ project.name }}</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2332;
+            --bg-card-hover: #1e293b;
+            --border: #2d3748;
+            --accent: #00ff88;
+            --accent-dim: #00cc6a;
+            --accent-glow: rgba(0, 255, 136, 0.15);
+            --red: #ff4757;
+            --red-dim: #ff6b6b;
+            --yellow: #ffa502;
+            --cyan: #00d2ff;
+            --purple: #a855f7;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-dim: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* ── Header ──────────────────────────────────────── */
+        .header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .header .badge {
+            display: inline-block;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid var(--accent-dim);
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        /* ── Section ─────────────────────────────────────── */
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            font-size: 1.4rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section h2 .icon {
+            font-size: 1.2rem;
+        }
+
+        /* ── Cards ───────────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--accent-dim);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-item {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .info-item .label {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-item .value {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+        }
+
+        /* ── Tables ──────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        thead th {
+            background: var(--bg-secondary);
+            color: var(--accent);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border);
+        }
+
+        tbody td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        tbody tr:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .port-num {
+            color: var(--cyan);
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+        }
+
+        .service-name {
+            color: var(--yellow);
+            font-weight: 500;
+        }
+
+        .state-open {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .cred-user { color: var(--cyan); font-family: monospace; }
+        .cred-pass { color: var(--red-dim); font-family: monospace; }
+
+        /* ── Timeline ────────────────────────────────────── */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent), var(--purple), var(--red));
+        }
+
+        .timeline-entry {
+            position: relative;
+            padding: 0.75rem 0 0.75rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .timeline-entry::before {
+            content: '';
+            position: absolute;
+            left: -1.5rem;
+            top: 1.1rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg-primary);
+        }
+
+        .timeline-time {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        .timeline-action {
+            color: var(--cyan);
+            font-weight: 600;
+            margin: 0.15rem 0;
+        }
+
+        .timeline-details {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .timeline-command {
+            display: inline-block;
+            background: var(--bg-secondary);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+            word-break: break-all;
+        }
+
+        /* ── Notes ───────────────────────────────────────── */
+        .note {
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--yellow);
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .note .note-time {
+            color: var(--text-dim);
+            font-size: 0.75rem;
+        }
+
+        /* ── Stats bar ───────────────────────────────────── */
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .stat {
+            flex: 1;
+            min-width: 120px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat .stat-label {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        /* ── Footer ──────────────────────────────────────── */
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        code {
+            background: var(--bg-secondary);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85em;
+            color: var(--cyan);
+        }
+
+        .empty {
+            color: var(--text-dim);
+            font-style: italic;
+            padding: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header">
+            <h1>🎯 {{ project.name }}</h1>
+            <div class="subtitle">HTB Penetration Test Report</div>
+            <div class="badge">Generated {{ generated_at }}</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value">{{ ports | length }}</div>
+                <div class="stat-label">Open Ports</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">{{ scans | length }}</div>
+                <div class="stat-label">Scans Run</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">{{ credentials | length }}</div>
+                <div class="stat-label">Credentials</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">{{ activity_log | length }}</div>
+                <div class="stat-label">Activities</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">{{ notes | length }}</div>
+                <div class="stat-label">Notes</div>
+            </div>
+        </div>
+
+        <!-- Target Info -->
+        <div class="section">
+            <h2><span class="icon">🎯</span> Target Information</h2>
+            <div class="card">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="label">IP Address</div>
+                        <div class="value">{{ target.ip or '—' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Hostname</div>
+                        <div class="value">{{ target.hostname or '—' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">OS Guess</div>
+                        <div class="value">{{ target.os_guess or '—' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Ports -->
+        <div class="section">
+            <h2><span class="icon">🔍</span> Open Ports</h2>
+            <div class="card">
+                {% if ports %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Port</th>
+                            <th>Protocol</th>
+                            <th>State</th>
+                            <th>Service</th>
+                            <th>Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in ports %}
+                        <tr>
+                            <td class="port-num">{{ p.port }}</td>
+                            <td>{{ p.protocol }}</td>
+                            <td class="state-open">{{ p.state }}</td>
+                            <td class="service-name">{{ p.service }}</td>
+                            <td>{{ p.version }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty">No ports discovered yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Scan Results -->
+        {% if scans %}
+        <div class="section">
+            <h2><span class="icon">📡</span> Scan Results</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Timestamp</th>
+                            <th>Ports Found</th>
+                            <th>Command</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in scans %}
+                        <tr>
+                            <td class="service-name">{{ s.type }}</td>
+                            <td class="timeline-time">{{ s.timestamp[:19] }}</td>
+                            <td class="port-num">{{ s.ports_found | default('—') }}</td>
+                            <td><code>{{ s.command[:80] }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Credentials -->
+        {% if credentials %}
+        <div class="section">
+            <h2><span class="icon">🔑</span> Credentials Found</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th>Source</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in credentials %}
+                        <tr>
+                            <td class="cred-user">{{ c.username }}</td>
+                            <td class="cred-pass">{{ c.password }}</td>
+                            <td>{{ c.source }}</td>
+                            <td>{{ c.notes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        {% if notes %}
+        <div class="section">
+            <h2><span class="icon">📝</span> Notes</h2>
+            {% for n in notes %}
+            <div class="note">
+                <div class="note-time">{{ n.timestamp[:19] }}</div>
+                <div>{{ n.text }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Activity Log -->
+        {% if activity_log %}
+        <div class="section">
+            <h2><span class="icon">📋</span> Activity Timeline</h2>
+            <div class="card">
+                <div class="timeline">
+                    {% for entry in activity_log %}
+                    <div class="timeline-entry">
+                        <div class="timeline-time">{{ entry.timestamp[:19] }}</div>
+                        <div class="timeline-action">{{ entry.action }}</div>
+                        {% if entry.details %}
+                        <div class="timeline-details">{{ entry.details }}</div>
+                        {% endif %}
+                        {% if entry.command %}
+                        <div class="timeline-command">$ {{ entry.command }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            Generated by <strong>HTB Tool</strong> &middot; {{ generated_at }}
+        </div>
+
+    </div>
+</body>
+</html>
