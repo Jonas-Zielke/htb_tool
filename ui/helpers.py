@@ -46,8 +46,13 @@ def check_tool_installed(tool_name):
     show_error(f"Required tool '{tool_name}' is not installed.")
     if confirm(f"Would you like to try installing '{tool_name}' via apt?"):
         import subprocess
-        console.print(f"\n  [dim]Running: sudo apt install -y {tool_name}[/]")
-        proc = subprocess.run(["sudo", "apt", "install", "-y", tool_name])
+        console.print(f"\n  [dim]Updating package index (required on Pwnbox)...[/]")
+        subprocess.run(["sudo", "apt", "update"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        console.print(f"  [dim]Running: sudo apt install -y {tool_name}[/]")
+        env = os.environ.copy()
+        env["DEBIAN_FRONTEND"] = "noninteractive"
+        proc = subprocess.run(["sudo", "-E", "apt", "install", "-y", tool_name], env=env)
         if proc.returncode == 0:
             show_success(f"Successfully installed [cyan]{tool_name}[/]!")
             # Brief pause to let user see success message before continuing
@@ -205,3 +210,24 @@ def menu_header(title=None):
     status_bar()
     if title:
         console.print(f"\n  [bold underline]{title}[/]\n")
+
+
+def copy_to_clipboard(text, label="Text"):
+    """Copies given text to the clipboard, handling Linux dependencies."""
+    try:
+        import pyperclip
+    except ImportError:
+        show_error("pyperclip is not installed. Please add it to requirements or run 'pip install pyperclip'.")
+        return
+
+    if os.name == "posix":
+        if not shutil.which("xclip") and not shutil.which("xsel"):
+            console.print("  [dim]Clipboard support requires xclip or xsel on Linux.[/]")
+            if not check_tool_installed("xclip"):
+                return
+
+    try:
+        pyperclip.copy(text)
+        show_success(f"{label} copied to clipboard!")
+    except Exception as e:
+        show_error(f"Clipboard copy failed: {e}")
