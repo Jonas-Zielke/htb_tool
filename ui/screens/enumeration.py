@@ -124,7 +124,13 @@ def action_enum_smb():
     menu_header("SMB Enumeration")
     console.print(f"  [bold]📁 Running enum4linux + smbclient on {ip}[/]\n")
 
-    _run_tool(["enum4linux", "-a", ip], data, "enum4linux", timeout=300)
+    import shutil
+    if shutil.which("enum4linux"):
+        _run_tool(["enum4linux", "-a", ip], data, "enum4linux", timeout=300)
+    elif shutil.which("enum4linux-ng"):
+        _run_tool(["enum4linux-ng", "-A", ip], data, "enum4linux-ng", timeout=300)
+    else:
+        _run_tool(["enum4linux-ng", "-A", ip], data, "enum4linux-ng", timeout=300)
     _run_tool(["smbclient", "-L", f"//{ip}", "-N"], data, "smbclient-list", timeout=30)
     pause()
 
@@ -212,7 +218,14 @@ def action_enum_all():
     )
 
     # SMB
-    _run_tool(["enum4linux", "-a", ip], data, "enum4linux", timeout=300)
+    import shutil
+    if shutil.which("enum4linux"):
+        _run_tool(["enum4linux", "-a", ip], data, "enum4linux", timeout=300)
+    elif shutil.which("enum4linux-ng"):
+        _run_tool(["enum4linux-ng", "-A", ip], data, "enum4linux-ng", timeout=300)
+    else:
+        _run_tool(["enum4linux-ng", "-A", ip], data, "enum4linux-ng", timeout=300)
+    
     _run_tool(["smbclient", "-L", f"//{ip}", "-N"], data, "smbclient-list", timeout=30)
 
     # DNS

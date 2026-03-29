@@ -181,8 +181,15 @@ def enum_smb():
 
     console.print(f"[bold]📁 SMB Enumeration on {target}[/]\n")
 
-    # enum4linux
-    _run_tool(["enum4linux", "-a", target], data, "enum4linux", timeout=300)
+    # enum4linux / enum4linux-ng
+    import shutil
+    if shutil.which("enum4linux"):
+        _run_tool(["enum4linux", "-a", target], data, "enum4linux", timeout=300)
+    elif shutil.which("enum4linux-ng"):
+        _run_tool(["enum4linux-ng", "-A", target], data, "enum4linux-ng", timeout=300)
+    else:
+        # Pwnbox lacks enum4linux in some versions, so we prioritize enum4linux-ng installation
+        _run_tool(["enum4linux-ng", "-A", target], data, "enum4linux-ng", timeout=300)
 
     # smbclient list shares
     _run_tool(

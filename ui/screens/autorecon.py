@@ -30,7 +30,7 @@ def action_autorecon():
     console.print("    [cyan]2.[/] Nmap Full Port Scan (all 65535)")
     console.print("    [cyan]3.[/] WhatWeb fingerprint")
     console.print("    [cyan]4.[/] Gobuster directory scan")
-    console.print("    [cyan]5.[/] SMB enumeration (enum4linux)")
+    console.print("    [cyan]5.[/] SMB enumeration (enum4linux / enum4linux-ng)")
     if hostname:
         console.print("    [cyan]6.[/] DNS zone transfer attempt")
     console.print()
@@ -71,7 +71,13 @@ def action_autorecon():
 
     # 5. SMB
     console.print("\n[bold magenta]━━━ Phase 5: SMB Enumeration ━━━[/]\n")
-    _run_tool(["enum4linux", "-a", ip], data, "enum4linux", timeout=300)
+    import shutil
+    if shutil.which("enum4linux"):
+        _run_tool(["enum4linux", "-a", ip], data, "enum4linux", timeout=300)
+    elif shutil.which("enum4linux-ng"):
+        _run_tool(["enum4linux-ng", "-A", ip], data, "enum4linux-ng", timeout=300)
+    else:
+        _run_tool(["enum4linux-ng", "-A", ip], data, "enum4linux-ng", timeout=300)
 
     # 6. DNS
     if hostname:
