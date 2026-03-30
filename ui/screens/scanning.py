@@ -18,26 +18,30 @@ def menu_scan():
     while True:
         menu_header()
         items = [
-            ("1", "⚡", "Quick Scan (Top 1000 ports)"),
-            ("2", "🔎", "Full Port Scan (all 65535)"),
-            ("3", "📦", "UDP Scan (top 100)", "sudo"),
-            ("4", "💀", "Vulnerability Scan (NSE vuln)"),
-            ("5", "🥷", "Stealth SYN Scan", "sudo"),
-            ("6", "📜", "Custom NSE Scripts"),
-            ("7", "⌨️ ", "Custom Nmap Command"),
-            ("8", "📋", "View Scan History"),
+            ("1", "⚡", "Quick Nmap Scan (Top 1000 ports)"),
+            ("2", "🔎", "Full Nmap Scan (all 65535)"),
+            ("3", "🚀", "RustScan (Extremely Fast Port Scan)"),
+            ("4", "🌊", "Masscan (Massive Network Scan)"),
+            ("5", "📦", "UDP Scan (top 100)", "sudo"),
+            ("6", "💀", "Vulnerability Scan (NSE vuln)"),
+            ("7", "🥷", "Stealth SYN Scan", "sudo"),
+            ("8", "📜", "Custom NSE Scripts"),
+            ("9", "⌨️ ", "Custom Nmap Command"),
+            ("h", "📋", "View Scan History"),
         ]
         render_menu("Port Scanning", items)
         c = choose(items)
         if c == "0": return
         elif c == "1": run_scan("quick", ["-sC", "-sV", "-T4", "--top-ports", "1000"])
         elif c == "2": run_scan("full", ["-sC", "-sV", "-p-", "-T4"])
-        elif c == "3": run_scan("udp", ["-sU", "--top-ports", "100", "-T4"], sudo=True)
-        elif c == "4": run_scan("vuln", ["--script", "vuln", "-T4"])
-        elif c == "5": run_scan("stealth", ["-sS", "-T2", "-f", "--data-length", "50", "-p-"], sudo=True)
-        elif c == "6": action_nse_scripts()
-        elif c == "7": action_custom_nmap()
-        elif c == "8": action_scan_history()
+        elif c == "3": action_rustscan()
+        elif c == "4": action_masscan()
+        elif c == "5": run_scan("udp", ["-sU", "--top-ports", "100", "-T4"], sudo=True)
+        elif c == "6": run_scan("vuln", ["--script", "vuln", "-T4"])
+        elif c == "7": run_scan("stealth", ["-sS", "-T2", "-f", "--data-length", "50", "-p-"], sudo=True)
+        elif c == "8": action_nse_scripts()
+        elif c == "9": action_custom_nmap()
+        elif c == "h": action_scan_history()
 
 
 def run_scan(label, args, sudo=False):
@@ -57,6 +61,54 @@ def run_scan(label, args, sudo=False):
         show_error("Scan timed out (30 min limit).")
     pause()
 
+def action_rustscan():
+    data = get_project_or_warn()
+    if not data: return
+    ip = get_target_or_warn(data)
+    if not ip: return
+    
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("rustscan"): return
+    
+    menu_header("RustScan Integration")
+    console.print(f"  [dim]Target: {ip}[/]")
+    cmd = ["rustscan", "-a", ip, "--", "-sC", "-sV"]
+    console.print(f"\n  [cyan]Running:[/] {' '.join(cmd)}\n")
+    try:
+        subprocess.run(cmd)
+        save_scan_history(data, "rustscan", " ".join(cmd))
+    except KeyboardInterrupt: pass
+    pause()
+
+def action_masscan():
+    data = get_project_or_warn()
+    if not data: return
+    ip = get_target_or_warn(data)
+    if not ip: return
+    
+    from ui.helpers import check_tool_installed
+    if not check_tool_installed("masscan"): return
+    
+    menu_header("Masscan Integration")
+    rate = ask("Packet rate", "1000")
+    ports = ask("Ports", "1-65535")
+    
+    cmd = ["sudo", "masscan", "-p", ports, ip, "--rate", rate]
+    console.print(f"\n  [cyan]Running:[/] {' '.join(cmd)}\n")
+    try:
+        subprocess.run(cmd)
+        save_scan_history(data, "masscan", " ".join(cmd))
+    except KeyboardInterrupt: pass
+    pause()
+
+def save_scan_history(data, type_str, cmd_str):
+    data.setdefault("scan_results", []).append({
+        "type": type_str,
+        "timestamp": datetime.now().isoformat(),
+        "command": cmd_str,
+        "ports_found": "?"
+    })
+    save_project(data)
 
 def action_nse_scripts():
     data = get_project_or_warn()

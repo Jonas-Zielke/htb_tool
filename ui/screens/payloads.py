@@ -7,12 +7,12 @@ import subprocess
 
 from ui.helpers import (
     console, pause, ask, ask_int, show_error, show_success, show_info,
-    menu_header, render_menu, choose, get_project_or_warn, copy_to_clipboard
+    menu_header, render_menu, choose, get_project_or_warn, copy_to_clipboard, confirm
 )
 from core.project import save_project, get_project_output_dir
 from core.config import (
     REVERSE_SHELL_TEMPLATES, WEBSHELL_TEMPLATES, MSFVENOM_PRESETS,
-    DEFAULT_LPORT, get_tun0_ip,
+    DEFAULT_LPORT, get_tun0_ip, FILE_PAYLOADS, PAYLOAD_CATEGORIES,
 )
 from core.logger import ActivityLogger
 from rich.panel import Panel
@@ -53,10 +53,11 @@ def menu_payload():
             ("1", "🐚", "Reverse Shell Generator"),
             ("2", "🎯", "Msfvenom Payload Builder"),
             ("3", "🌐", "Webshell Generator"),
-            ("4", "🎧", "Start Netcat Listener"),
-            ("5", "💎", "Start Metasploit Handler"),
-            ("6", "📋", "List All Payload Types"),
-            ("7", "⬆️ ", "Shell Stabilization Cheatsheet"),
+            ("4", "📄", "File Payloads (Docs, Macros, PDF)"),
+            ("5", "🎧", "Start Netcat Listener"),
+            ("6", "💎", "Start Metasploit Handler"),
+            ("7", "📋", "List All Payload Types"),
+            ("8", "⬆️ ", "Shell Stabilization Cheatsheet"),
         ]
         render_menu("Payloads & Reverse Shells", items)
         c = choose(items)
@@ -64,10 +65,11 @@ def menu_payload():
         elif c == "1": action_reverse_shell()
         elif c == "2": action_msfvenom()
         elif c == "3": action_webshell()
-        elif c == "4": action_listener()
-        elif c == "5": action_msf_handler()
-        elif c == "6": action_list_payloads()
-        elif c == "7": action_shell_stabilize()
+        elif c == "4": action_file_payloads()
+        elif c == "5": action_listener()
+        elif c == "6": action_msf_handler()
+        elif c == "7": action_list_payloads()
+        elif c == "8": action_shell_stabilize()
 
 
 def action_reverse_shell():
@@ -76,22 +78,46 @@ def action_reverse_shell():
         return
 
     menu_header("Reverse Shell Generator")
-    shell_types = sorted(REVERSE_SHELL_TEMPLATES.keys())
-
-    # Display available types in columns
-    table = Table(show_header=False, box=None, padding=(0, 4))
-    table.add_column(width=25)
-    table.add_column(width=25)
-    table.add_column(width=25)
-    for i in range(0, len(shell_types), 3):
-        row = []
-        for j in range(3):
-            if i + j < len(shell_types):
-                row.append(f"[cyan]{i + j + 1:2}[/]. {shell_types[i + j]}")
-            else:
-                row.append("")
-        table.add_row(*row)
-    console.print(table)
+    shell_types = []
+    
+    categorized = set()
+    for cat in ["Windows", "Linux"]:
+        types = [t for t in PAYLOAD_CATEGORIES.get(cat, []) if t in REVERSE_SHELL_TEMPLATES]
+        if not types: continue
+        console.print(f"  [bold {('blue' if cat == 'Windows' else 'yellow')}]{cat} Shells[/]")
+        table = Table(show_header=False, box=None, padding=(0, 4))
+        table.add_column(width=25); table.add_column(width=25); table.add_column(width=25)
+        for i in range(0, len(types), 3):
+            row = []
+            for j in range(3):
+                if i + j < len(types):
+                    stype = types[i + j]
+                    idx = len(shell_types) + 1
+                    shell_types.append(stype)
+                    categorized.add(stype)
+                    row.append(f"[cyan]{idx:2}[/]. {stype}")
+                else:
+                    row.append("")
+            table.add_row(*row)
+        console.print(table)
+        
+    other_types = [t for t in sorted(REVERSE_SHELL_TEMPLATES.keys()) if t not in categorized]
+    if other_types:
+        console.print("\n  [bold magenta]Other Shells[/]")
+        table = Table(show_header=False, box=None, padding=(0, 4))
+        table.add_column(width=25); table.add_column(width=25); table.add_column(width=25)
+        for i in range(0, len(other_types), 3):
+            row = []
+            for j in range(3):
+                if i + j < len(other_types):
+                    stype = other_types[i + j]
+                    idx = len(shell_types) + 1
+                    shell_types.append(stype)
+                    row.append(f"[cyan]{idx:2}[/]. {stype}")
+                else:
+                    row.append("")
+            table.add_row(*row)
+        console.print(table)
 
     idx = ask_int(f"\n  Shell type (1-{len(shell_types)})", 1)
     if idx < 1 or idx > len(shell_types):
@@ -134,7 +160,11 @@ def action_reverse_shell():
     console.print(f"\n  [dim]💡 Start listener: [bold]nc -lvnp {lport}[/][/]")
 
     if confirm("Copy payload to clipboard?"):
-        c = choose([("1", "📄", "Raw Payload"), ("2", "📄", "Base64 Command")], back_label="Skip")
+        console.print("\n  [bold]What to copy?[/]")
+        console.print("    [cyan]1[/]. Raw Payload")
+        console.print("    [cyan]2[/]. Base64 Command")
+        console.print("    [cyan]0[/]. Skip")
+        c = ask("Selection", "1")
         if c == "1":
             copy_to_clipboard(payload, "Raw payload")
         elif c == "2":
@@ -257,6 +287,80 @@ def action_webshell():
 
     logger = ActivityLogger(data)
     logger.log_payload("webshell", details=f"Generated {shell_type}", output_file=str(outpath))
+    save_project(data)
+    pause()
+
+
+def action_file_payloads():
+    data = get_project_or_warn()
+    if not data:
+        return
+
+    menu_header("File Payloads (Docs, Macros, PDF)")
+    
+    presets = sorted(list(FILE_PAYLOADS.keys()))
+    
+    table = Table(show_header=True, header_style="bold cyan", box=None)
+    table.add_column("#", width=3, justify="right")
+    table.add_column("Payload", style="cyan")
+    table.add_column("OS", style="blue")
+    table.add_column("Description", style="white")
+    
+    for i, name in enumerate(presets, 1):
+        info = FILE_PAYLOADS[name]
+        table.add_row(str(i), name, info.get("group", "General"), info["description"])
+    console.print(table)
+    
+    idx = ask_int("\n  Selection", 1)
+    if idx < 1 or idx > len(presets):
+        show_error("Invalid selection.")
+        pause()
+        return
+
+    preset_name = presets[idx - 1]
+    preset = FILE_PAYLOADS[preset_name]
+    lhost = _get_lhost()
+    lport = ask_int("LPORT", DEFAULT_LPORT)
+
+    if not lhost:
+        return
+
+    output_dir = get_project_output_dir(data["name"])
+    outfile = ask("Output filename", f"shell.{preset['ext']}")
+    outpath = output_dir / outfile
+
+    console.print(f"\n  [bold]Building {preset_name}...[/]")
+    
+    if preset["type"] == "text":
+        content = preset["content_template"].format(lhost=lhost, lport=lport, outfile=outpath)
+        with open(outpath, "w") as f:
+            f.write(content)
+        show_success(f"Instructions/String saved to: [cyan]{outpath}[/]")
+        console.print(Panel(content, border_style="yellow", title="[bold]Instructions/Target[/]"))
+        if confirm("Copy to clipboard?"):
+            copy_to_clipboard(content, "Instructions/Target")
+            
+    elif preset["type"] == "command":
+        cmd_str = preset["command"].format(lhost=lhost, lport=lport, outfile=outpath)
+        cmd = cmd_str.split()
+        
+        from ui.helpers import check_tool_installed
+        if not check_tool_installed("msfvenom"):
+            return
+            
+        console.print(f"  [bold cyan]⚡ Running:[/] [dim]{cmd_str}[/]\n")
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        
+        if proc.returncode == 0:
+            show_success(f"Payload generated: [cyan]{outpath}[/]")
+            if proc.stdout:
+                console.print(f"  [dim]{proc.stdout.strip()}[/]")
+            console.print(f"\n  [dim]💡 Optional Handler: msfconsole -q -x \"use multi/handler; set PAYLOAD windows/x64/meterpreter/reverse_tcp; set LHOST {lhost}; set LPORT {lport}; run\"[/]")
+        else:
+            show_error(f"msfvenom failed: {proc.stderr}")
+
+    logger = ActivityLogger(data)
+    logger.log_payload("file_payload", details=f"Generated {preset_name} file payload", output_file=str(outpath))
     save_project(data)
     pause()
 

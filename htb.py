@@ -29,6 +29,7 @@ from ui.screens.bruteforce import menu_bruteforce
 from ui.screens.utils import menu_utils
 from ui.screens.reports import menu_report
 from ui.screens.autorecon import action_autorecon
+from ui.screens.workflow import menu_workflow
 
 
 def main():
@@ -41,6 +42,7 @@ def main():
             status_bar()
 
             items = [
+                ("w", "🧠", "Workflow & AI Setup", "⚡"),
                 ("1", "📁", "Project Management"),
                 ("2", "🎯", "Target & DNS Setup"),
                 ("3", "🔍", "Port Scanning"),
@@ -57,6 +59,8 @@ def main():
 
             if c == "0":
                 break
+            elif c == "w":
+                menu_workflow()
             elif c == "1":
                 menu_project()
             elif c == "2":
