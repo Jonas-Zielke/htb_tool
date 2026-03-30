@@ -18,7 +18,7 @@ def menu_workflow():
         
         # Determine recommendations based on discovered data
         ports = {p.get("port", 0): p for p in data.get("open_ports", [])}
-        os_guess = data.get("target", {}).get("os_guess", "").lower()
+        os_guess = (data.get("target", {}).get("os_guess") or "").lower()
         
         recommendations = []
         
