@@ -41,7 +41,7 @@ The script acts as an intelligent wrapper around standard pentesting tools. It e
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/htb-toolbox.git
+   git clone https://github.com/jonas-zielke/htb-toolbox.git
    cd htb-toolbox
    ```
 
