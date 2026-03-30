@@ -41,8 +41,8 @@ The script acts as an intelligent wrapper around standard pentesting tools. It e
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/jonas-zielke/htb-toolbox.git
-   cd htb-toolbox
+   git clone https://github.com/Jonas-Zielke/htb_tool.git
+   cd htb_tool
    ```
 
 2. **Set up an alias (Recommended):**
